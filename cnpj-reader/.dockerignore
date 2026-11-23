@@ -1,0 +1,10 @@
+.env
+.env.*
+.git
+.github
+.phpunit.cache
+.phpunit.result.cache
+/node_modules
+/public/build
+/storage/logs
+/vendor
