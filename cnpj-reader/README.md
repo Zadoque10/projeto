@@ -7,43 +7,45 @@ API Laravel para consultar um CNPJ na BrasilAPI, validar o número e persistir o
 ## Pré-requisitos
 
 - Docker Desktop com Docker Compose.
-- PHP 8.3 ou superior e Composer 2 para configurar o `.env` e executar os testes localmente.
 - Acesso à internet para consultar a BrasilAPI.
+- PHP 8.3 ou superior e Composer 2 apenas para executar os testes localmente.
 
 ## Configuração e inicialização
 
-Se ainda não existir um `.env`, crie-o a partir do exemplo. No PowerShell:
+No PowerShell, crie o `.env` a partir do exemplo:
 
 ```powershell
 Copy-Item .env.example .env
 ```
 
-Gere a chave Laravel se `APP_KEY` estiver vazia:
+Na primeira inicialização, gere uma chave Laravel dentro do container. O arquivo `.env` é montado para que a chave gerada seja persistida na máquina:
 
-```powershell
-php artisan key:generate
+```bash
+docker compose build app
+docker compose run --rm --no-deps app php artisan key:generate
 ```
 
-O Compose lê o `.env` da raiz. A configuração Docker define a conexão MySQL; opcionalmente, ajuste estas variáveis no `.env`:
+Execute `key:generate` somente enquanto `APP_KEY` estiver vazia. A chave é usada para criptografia e não deve ser compartilhada nem versionada.
+
+O Compose lê o `.env` da raiz e usa MySQL no container. Ajuste as variáveis locais se necessário:
 
 ```dotenv
 APP_PORT=8000
 DOCKER_DB_DATABASE=cnpj_reader
 DOCKER_DB_USERNAME=cnpj
-DOCKER_DB_PASSWORD=senha_local
-DOCKER_DB_ROOT_PASSWORD=senha_root_local
+DOCKER_DB_PASSWORD=cnpj_local_password
+DOCKER_DB_ROOT_PASSWORD=local_root_password
 ```
 
-As senhas padrão são apenas para desenvolvimento local. Não compartilhe nem versione o arquivo `.env`.
+Se alterar `APP_PORT`, atualize também `APP_URL`. As senhas do exemplo são apenas para desenvolvimento local. Não use esses valores em produção nem versione o arquivo `.env`.
 
-Suba os containers e execute as migrations:
+Suba os containers:
 
 ```bash
 docker compose up --build -d
-docker compose exec app php artisan migrate --force
 ```
 
-A API ficará disponível em `http://localhost:8000`. Os dados do MySQL são mantidos no volume `db_data`; `docker compose down` preserva os dados. Evite `docker compose down -v` se quiser mantê-los.
+O container da API aguarda o MySQL ficar saudável e aplica as migrations antes de iniciar o Apache. A API ficará disponível em `http://localhost:8000`. Os dados do MySQL são mantidos no volume `db_data`; `docker compose down` preserva os dados. Evite `docker compose down -v` se quiser mantê-los.
 
 ## Swagger
 
@@ -91,3 +93,9 @@ Com as dependências instaladas via Composer:
 ```bash
 php artisan test
 ```
+
+## Arquitetura
+
+A aplicação é uma API REST em Laravel. As rotas encaminham as requisições para o controlador de empresas, que valida o CNPJ, consulta a BrasilAPI e persiste os dados recebidos no MySQL usando Eloquent. A resposta completa da consulta é armazenada em JSON, junto com campos usados para listar e filtrar empresas.
+
+Docker Compose executa a aplicação PHP/Apache e o MySQL; ao iniciar, a aplicação aguarda o banco e aplica as migrations. A documentação dos endpoints está disponível em `/docs`, com especificação OpenAPI em `/openapi.json`. Os testes de integração verificam os principais fluxos da API.
