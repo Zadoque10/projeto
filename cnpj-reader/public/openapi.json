@@ -1,0 +1,237 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "CNPJ Reader API",
+    "description": "Consulta, validação e armazenamento de dados de empresas via BrasilAPI.",
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "Servidor atual"
+    }
+  ],
+  "paths": {
+    "/api/empresas": {
+      "post": {
+        "operationId": "storeEmpresa",
+        "summary": "Consultar e cadastrar empresa por CNPJ",
+        "description": "Valida o CNPJ, consulta a BrasilAPI e persiste os dados recebidos. Retorna 201 ao cadastrar e 200 ao atualizar um cadastro existente.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["cnpj"],
+                "properties": {
+                  "cnpj": {
+                    "type": "string",
+                    "pattern": "^\\d{14}$",
+                    "example": "11222333000181"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Empresa cadastrada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmpresaCompletaResponse"
+                }
+              }
+            }
+          },
+          "200": {
+            "description": "Cadastro da empresa atualizado.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmpresaCompletaResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "CNPJ não encontrado na BrasilAPI.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "CNPJ inválido ou campos não informados corretamente."
+          },
+          "502": {
+            "description": "Falha ou resposta inválida da BrasilAPI.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "listEmpresas",
+        "summary": "Listar empresas cadastradas",
+        "parameters": [
+          {
+            "name": "uf",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 2,
+              "example": "SP"
+            }
+          },
+          {
+            "name": "municipio",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 255,
+              "example": "São Paulo"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de empresas, com filtros opcionais por UF e município.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmpresaListResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Filtros inválidos."
+          }
+        }
+      }
+    },
+    "/api/empresas/{cnpj}": {
+      "get": {
+        "operationId": "showEmpresa",
+        "summary": "Consultar empresa pelo CNPJ",
+        "parameters": [
+          {
+            "name": "cnpj",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{14}$",
+              "example": "11222333000181"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dados completos da empresa.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmpresaCompletaResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Empresa não cadastrada.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "EmpresaCompletaResponse": {
+        "type": "object",
+        "required": ["data"],
+        "properties": {
+          "data": {
+            "type": "object",
+            "description": "Dados completos recebidos da BrasilAPI.",
+            "additionalProperties": true
+          }
+        }
+      },
+      "EmpresaListResponse": {
+        "type": "object",
+        "required": ["data", "total"],
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EmpresaResumo"
+            }
+          },
+          "total": {
+            "type": "integer",
+            "example": 1
+          }
+        }
+      },
+      "EmpresaResumo": {
+        "type": "object",
+        "properties": {
+          "cnpj": {
+            "type": "string",
+            "example": "11222333000181"
+          },
+          "razao_social": {
+            "type": "string",
+            "nullable": true,
+            "example": "Empresa Exemplo Ltda"
+          },
+          "nome_fantasia": {
+            "type": "string",
+            "nullable": true,
+            "example": "Empresa Exemplo"
+          },
+          "uf": {
+            "type": "string",
+            "nullable": true,
+            "example": "SP"
+          },
+          "municipio": {
+            "type": "string",
+            "nullable": true,
+            "example": "São Paulo"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "example": "CNPJ não encontrado na BrasilAPI."
+          }
+        }
+      }
+    }
+  }
+}

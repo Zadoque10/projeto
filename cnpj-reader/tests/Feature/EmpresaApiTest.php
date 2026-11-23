@@ -16,7 +16,7 @@ function brasilApiEmpresa(string $cnpj, string $uf = 'SP', string $municipio = '
 }
 
 test('consulta a BrasilAPI, persiste os dados e responde com o JSON completo', function () {
-    $cnpj = '61774098000129';
+    $cnpj = '11222333000181';
     $dados = brasilApiEmpresa($cnpj);
     Http::fake([
         "https://brasilapi.com.br/api/cnpj/v1/{$cnpj}" => Http::response($dados),
@@ -48,7 +48,7 @@ test('rejeita CNPJ inválido sem consultar a BrasilAPI', function () {
 });
 
 test('lista empresas com filtros e consulta individual com todos os dados', function () {
-    $cnpjSp = '61774098000129';
+    $cnpjSp = '11222333000181';
     $cnpjRj = '00000000000191';
     $dadosSp = brasilApiEmpresa($cnpjSp);
     $dadosRj = brasilApiEmpresa($cnpjRj, 'RJ', 'Niterói');
